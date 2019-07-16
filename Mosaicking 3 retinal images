@@ -1,0 +1,63 @@
+function [mos123_o, r1, r2, r3, r4, s1, s2, s3, s4] =  morp3(im1, im2, im3, im1o, im2o, im3o)
+% Read the images
+close all
+
+im1_original = uint8(im1o);
+im2_original = uint8(im2o);
+im3_original = uint8(im3o);
+
+% Interpolate missing rows
+im1_interp = double(im1);
+im1_interp(im1_interp==0) = NaN;
+im1_interp = fillmissing(im1_interp, 'linear', 1);
+missing_rows_1 = ~any(im1, 2);
+im1(missing_rows_1, :) = im1_interp(missing_rows_1, :);
+im1 = uint8(im1);
+
+im2_interp = double(im2);
+im2_interp(im2_interp==0) = NaN;
+im2_interp = fillmissing(im2_interp, 'linear', 1);
+missing_rows_2 = ~any(im2, 2);
+im2(missing_rows_2, :) = im2_interp(missing_rows_2, :);
+im2 = uint8(im2);
+
+im3_interp = double(im3);
+im3_interp(im3_interp==0) = NaN;
+im3_interp = fillmissing(im3_interp, 'linear', 1);
+missing_rows_3 = ~any(im3, 2);
+im3(missing_rows_3, :) = im3_interp(missing_rows_3, :);
+im3 = uint8(im3);
+
+%figure;
+%montage({im3, im1, im2});
+
+% Binary erode and dilate
+close all
+%se = strel('disk', 1);
+%im1_open = imclose(im1, se);
+%im2_open = imclose(im2, se);
+%im3_open = imclose(im3, se);
+
+%figure;
+%montage({im3_open, im1_open, im2_open});
+
+im1_f = FrangiFilter2D(double(im1));
+im2_f = FrangiFilter2D(double(im2));
+im3_f = FrangiFilter2D(double(im3));
+
+%a = imclose(a, se);
+%b = imclose(b, se);
+%c = imclose(c, se);
+
+figure;
+montage({im1_f, im2_f, im3_f});
+
+[mos13, mos13_o, r1, r2, r3, r4] = sift_mosaic_two(im1_f, im3_f, im1_original, im3_original);
+%[D,mos13_o] = imregdemons(r1,r2, [100, 50, 25])
+[mos123, mos123_o, s1, s2, s3, s4] = sift_mosaic_two(mos13, im2_f, mos13_o, im2_original);
+%[D,mos123_o] = imregdemons(s1,s2, [100, 50, 25])
+
+%[mos13, mos13_o, r1, r2, r3, r4] = sift_mosaic_two(im1_f, im3_f, im1_original, im3_original);
+%[mos12, mos12_o, s1, s2, s3, s4] = sift_mosaic_two(im1_f, im2_f, im1_original, im2_original);
+%mos123_o = 0;
+end
