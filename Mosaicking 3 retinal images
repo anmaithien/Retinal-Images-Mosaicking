@@ -1,6 +1,5 @@
-function [mos123_o, r1, r2, r3, r4, s1, s2, s3, s4] =  morp3(im1, im2, im3, im1o, im2o, im3o)
+function [mosaic3, figM3] =  morp3(im1, im2, im3, im1o, im2o, im3o, iteration)
 % Read the images
-close all
 
 im1_original = uint8(im1o);
 im2_original = uint8(im2o);
@@ -9,11 +8,13 @@ im3_original = uint8(im3o);
 % Interpolate missing rows
 im1_interp = double(im1);
 im1_interp(im1_interp==0) = NaN;
-im1_interp = fillmissing(im1_interp, 'linear', 1);
+im1_interp = fillmissing(im1_interp,'linear', 1);  %, 'linear', 1);
 missing_rows_1 = ~any(im1, 2);
 im1(missing_rows_1, :) = im1_interp(missing_rows_1, :);
 im1 = uint8(im1);
-
+ 
+im1 = imgaussfilt(im1,[2; 0.01]); %,'FilterSize',[1; 2*ceil(2*sigma)+1.]);
+ 
 im2_interp = double(im2);
 im2_interp(im2_interp==0) = NaN;
 im2_interp = fillmissing(im2_interp, 'linear', 1);
@@ -21,56 +22,103 @@ missing_rows_2 = ~any(im2, 2);
 im2(missing_rows_2, :) = im2_interp(missing_rows_2, :);
 im2 = uint8(im2);
 
+im2 = imgaussfilt(im2,[2; 0.01]); %,'FilterSize',[1; 2*ceil(2*sigma)+1.]);
+
 im3_interp = double(im3);
 im3_interp(im3_interp==0) = NaN;
-im3_interp = fillmissing(im3_interp, 'linear', 1);
+im3_interp = fillmissing(im3_interp,'linear', 1);  %, 'linear', 1);
 missing_rows_3 = ~any(im3, 2);
 im3(missing_rows_3, :) = im3_interp(missing_rows_3, :);
 im3 = uint8(im3);
+ 
+im3 = imgaussfilt(im3,[2; 0.01]); %,'FilterSize',[1; 2*ceil(2*sigma)+1.]);
 
-%figure;
-%montage({im3, im1, im2});
+% show matches
+% fig12.Visible = "on";
+% fig23.Visible = "on";
 
-% Binary erode and dilate
-close all
-%se = strel('disk', 1);
-%im1_open = imclose(im1, se);
-%im2_open = imclose(im2, se);
-%im3_open = imclose(im3, se);
+% --------------------------------------------------------------------
+%                                                               Mosaic3
+% --------------------------------------------------------------------
+% get transformation
+[H12, fig12] = transform(im2, im1, iteration)%, 1);
+% show matches
+fig12.Visible = "on";
 
-%figure;
-%montage({im3_open, im1_open, im2_open});
+box2 = [1  size(im1,2) size(im1,2)  1 ;
+        1  1           size(im1,1)  size(im1,1) ;
+        1  1           1            1 ] ;
+box2_ = inv(H12) * box2 ;
+box2_(1,:) = box2_(1,:) ./ box2_(3,:) ;
+box2_(2,:) = box2_(2,:) ./ box2_(3,:) ;
+ur = min([1 box2_(1,:)]):max([size(im2,2) box2_(1,:)]) ;
+vr = min([1 box2_(2,:)]):max([size(im2,1) box2_(2,:)]) ;
 
-im1_f = FrangiFilter2D(double(im1));
-im2_f = FrangiFilter2D(double(im2));
-im3_f = FrangiFilter2D(double(im3));
-
-%a = imclose(a, se);
-%b = imclose(b, se);
-%c = imclose(c, se);
-
-figure;
-montage({im1_f, im2_f}); %im3_f});
-
-% blur using Gaussian filter
-I1blur = imgaussfilt(im1_f, 1);
-I2blur = imgaussfilt(im2_f, 1);
-I3blur = imgaussfilt(im3_f, 1);
-
-[mos13, mos13_o, r1, r2, r3, r4] = sift_mosaic_two(I1blur, I3blur, im1_original, im3_original);
-
-[mos123, mos123_o, s1, s2, s3, s4] = sift_mosaic_two(I1blur, I2blur, im1_original, im2_original);
-
-% [mos13, mos13_o, r1, r2, r3, r4] = sift_mosaic_two(im1_f, im3_f, im1_original, im3_original);
-%[D,mos13_o] = imregdemons(r1,r2, [100, 50, 25])
+[u,v] = meshgrid(ur,vr) ;
+im2_ = vl_imwbackward(im2double(im2),u,v) ;
+im2_o = vl_imwbackward(im2double(im2_original),u,v) ;
 
 
-% [mos123, mos123_o, s1, s2, s3, s4] = sift_mosaic_two(mos13, im2_f, mos13_o, im2_original);
+z_ = H12(3,1) * u + H12(3,2) * v + H12(3,3) ;
+u_ = (H12(1,1) * u + H12(1,2) * v + H12(1,3)) ./ z_ ;
+v_ = (H12(2,1) * u + H12(2,2) * v + H12(2,3)) ./ z_ ;
+im1_ = vl_imwbackward(im2double(im1),u_,v_) ;
+im1_o = vl_imwbackward(im2double(im1_original),u_,v_) ;
 
 
-%[D,mos123_o] = imregdemons(s1,s2, [100, 50, 25])
+% get the 3rd image into the same image space
+% NOTICE: USE im2_ instead of im2 so that it concludes all of the images
+[H23, fig23] = transform(im2_, im3, iteration)%, 3);
+fig23.Visible = "on";
 
-%[mos13, mos13_o, r1, r2, r3, r4] = sift_mosaic_two(im1_f, im3_f, im1_original, im3_original);
-%[mos12, mos12_o, s1, s2, s3, s4] = sift_mosaic_two(im1_f, im2_f, im1_original, im2_original);
-%mos123_o = 0;
+
+box2 = [1  size(im3,2) size(im3,2)  1 ;
+        1  1           size(im3,1)  size(im3,1) ;
+        1  1           1            1 ] ;
+box2_ = inv(H23) * box2 ;
+box2_(1,:) = box2_(1,:) ./ box2_(3,:) ;
+box2_(2,:) = box2_(2,:) ./ box2_(3,:) ;
+ur = min([1 box2_(1,:)]):max([size(im2_,2) box2_(1,:)]) ;
+vr = min([1 box2_(2,:)]):max([size(im2_,1) box2_(2,:)]) ;
+
+[u,v] = meshgrid(ur,vr) ;
+im2_ = vl_imwbackward(im2double(im2_),u,v) ;
+im1_ = vl_imwbackward(im2double(im1_),u,v) ;
+im2_o = vl_imwbackward(im2double(im2_o),u,v) ;
+im1_o = vl_imwbackward(im2double(im1_o),u,v) ;
+
+[u,v] = meshgrid(ur,vr) ;
+
+z123_ = H23(3,1) * u + H23(3,2) * v + H23(3,3) ;
+u123_ = (H23(1,1) * u + H23(1,2) * v + H23(1,3)) ./ z123_ ;
+v123_ = (H23(2,1) * u + H23(2,2) * v + H23(2,3)) ./ z123_ ;
+im3_ = vl_imwbackward(im2double(im3),u123_,v123_) ;
+im3_o = vl_imwbackward(im2double(im3_original),u123_,v123_) ;
+
+
+% CALCULATE MOSAIC
+
+
+mass = ~isnan(im1_) + ~isnan(im2_) + ~isnan(im3_);
+im1_(isnan(im1_)) = 0 ;
+im2_(isnan(im2_)) = 0 ;
+im3_(isnan(im3_)) = 0 ;
+
+mosaic3 = (im1_ + im2_ + im3_) ./ mass ;
+
+mass_o = ~isnan(im1_o) + ~isnan(im2_o) + ~isnan(im3_o);
+im1_o(isnan(im1_o)) = 0 ;
+im2_o(isnan(im2_o)) = 0 ;
+im3_o(isnan(im3_o)) = 0 ;
+
+mosaic3_o = (im1_o + im2_o + im3_o) ./ mass_o ;
+
+%figM3 = fig12;
+figM3 = figure('visible','off') ; 
+subplot(1,2,2);
+imagesc(mosaic3_o) ; axis image off ;
+title('Mosaic') ;
+
+if nargout == 0, clear mosaic ; end
+
 end
