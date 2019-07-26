@@ -50,11 +50,24 @@ im3_f = FrangiFilter2D(double(im3));
 %c = imclose(c, se);
 
 figure;
-montage({im1_f, im2_f, im3_f});
+montage({im1_f, im2_f}); %im3_f});
 
-[mos13, mos13_o, r1, r2, r3, r4] = sift_mosaic_two(im1_f, im3_f, im1_original, im3_original);
+% blur using Gaussian filter
+I1blur = imgaussfilt(im1_f, 1);
+I2blur = imgaussfilt(im2_f, 1);
+I3blur = imgaussfilt(im3_f, 1);
+
+[mos13, mos13_o, r1, r2, r3, r4] = sift_mosaic_two(I1blur, I3blur, im1_original, im3_original);
+
+[mos123, mos123_o, s1, s2, s3, s4] = sift_mosaic_two(I1blur, I2blur, im1_original, im2_original);
+
+% [mos13, mos13_o, r1, r2, r3, r4] = sift_mosaic_two(im1_f, im3_f, im1_original, im3_original);
 %[D,mos13_o] = imregdemons(r1,r2, [100, 50, 25])
-[mos123, mos123_o, s1, s2, s3, s4] = sift_mosaic_two(mos13, im2_f, mos13_o, im2_original);
+
+
+% [mos123, mos123_o, s1, s2, s3, s4] = sift_mosaic_two(mos13, im2_f, mos13_o, im2_original);
+
+
 %[D,mos123_o] = imregdemons(s1,s2, [100, 50, 25])
 
 %[mos13, mos13_o, r1, r2, r3, r4] = sift_mosaic_two(im1_f, im3_f, im1_original, im3_original);
