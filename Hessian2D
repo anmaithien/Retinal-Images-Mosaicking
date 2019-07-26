@@ -15,8 +15,7 @@ function [Dxx,Dxy,Dyy] = Hessian2D(I,Sigma)
 %   I = im2double(imread('moon.tif'));
 %   [Dxx,Dxy,Dyy] = Hessian2(I,2);
 %   figure, imshow(Dxx,[]);
-%
-% Function is written by D.Kroon University of Twente (June 2009)
+
 
 if nargin < 2, Sigma = 1; end
 
